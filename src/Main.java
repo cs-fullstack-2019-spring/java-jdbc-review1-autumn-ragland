@@ -19,22 +19,55 @@ public class Main {
         return conn;
     }
 
-//    get match data from game + goal table using prepared statements
-    private static void getMatches(int matchID){
+//    get match data from game + goal table
+    private static void getMatches(){
         String SQL =
-                "SELECT game.id,game.mdate,game.stadium,game.team1,game.team2, " +
-                "count(goal.gtime) FROM game " +
+                "SELECT game.id,game.mdate,game.stadium,game.team1,game.team2, count(goal.gtime) " +
+                "FROM game " +
                 "JOIN goal ON game.id=goal.matchid " +
-                "WHERE game.id=? GROUP BY mdate, id, stadium, team1, team2";
+                "GROUP BY mdate, id, stadium, team1, team2 " +
+                "ORDER BY game.id";
         try(Connection conn = connect();
             PreparedStatement pstmt = conn.prepareStatement(SQL)) {
-            pstmt.setInt(1, matchID);
             ResultSet rs = pstmt.executeQuery();
             formatResults(rs);
         }
         catch(SQLException ex){
             System.out.println(ex.getMessage());
         }
+    }
+
+//    get each Team's scores per game
+    private static void matchResults(int matchIDNumber, String teamOne, String teamTwo) {
+        int team1Score = 0;
+        int team2Score = 0;
+        String SQL ="SELECT matchid, teamid  FROM goal WHERE matchid = ?";
+        try
+        {
+            Connection conn = connect();
+            PreparedStatement pstmt = conn.prepareStatement(SQL) ;
+            pstmt.setInt(1,matchIDNumber);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                if(rs.getString("teamID").equalsIgnoreCase(teamOne)) {
+                    team1Score++;
+                }
+                else {
+                    team2Score++;
+                }
+            }
+
+            System.out.print(" " + teamOne + ":");
+            System.out.print(team1Score + " ");
+            System.out.print(teamTwo + ":");
+            System.out.println(team2Score);
+        }
+        catch (SQLException ex)
+        {
+            System.out.println(ex.getMessage());
+        }
+
     }
 
 //    add record to goal table using prepared statements
@@ -58,10 +91,8 @@ public class Main {
             while(rs.next()){
                 System.out.print("MATCH ID: " + rs.getString(1));
                 System.out.print(" MATCH DATE: " + rs.getString(2));
-                System.out.println(" STADIUM: " + rs.getString(3));
-                System.out.print("TEAM ONE: " + rs.getString(4));
-                System.out.print(" TEAM TWO: " + rs.getString(5));
-                System.out.println(" Goals: " + rs.getString(6));
+                System.out.print(" STADIUM: " + rs.getString(3));
+                matchResults(rs.getInt("id"),rs.getString("team1"),rs.getString("team2"));
             }
     }
 
@@ -82,26 +113,33 @@ public class Main {
             userInput = read.nextLine();
 
             if(userInput.equals("1")){
-                System.out.println("Please enter the match ID (int)");
-                int matchID = read.nextInt();
-                getMatches(matchID);
+                getMatches();
             }
 
             else if(userInput.equals("2")){
-                System.out.println("Please enter the matchID (int)");
+
+                System.out.println("Please enter the matchID (1001 - 1031)");
                 int matchID = read.nextInt();
-                System.out.println("Please enter the teamID (string)");
-                String teamID = read.nextLine();
-                System.out.println("Please enter the player (string)");
-                String player = read.nextLine();
+
+                System.out.println("Please enter the teamID (ex. POL)");
+                String teamID = read.next();
+
+                System.out.println("Please enter the player (last name)");
+                String player = read.next();
+
                 System.out.println("Please enter the goal time (int)");
                 int gTime = read.nextInt();
+
                 addGoal(matchID,teamID,player,gTime);
                 System.out.println("Goal Added!");
             }
 
+            else if(userInput.equals("q")){
+                System.out.println("Thanks for visiting the CodeCrew Sports Network");
+            }
+
             else{
-                System.out.println("Chose option 1 or option 2 or enter q to quit");
+                System.out.println("Chose option 1 or option 2");
             }
         }
     }
